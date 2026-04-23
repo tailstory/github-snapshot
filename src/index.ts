@@ -5,7 +5,6 @@
  *   GET /                 — landing page with two URL inputs
  *   GET /export?url=...   — project URL → xlsx
  *   GET /pdf?url=...      — issue URL → pdf
- *   GET /_debug?url=...   — TEMP: dump the raw fetch as JSON
  */
 
 import { buildWorkbook, workbookFilename } from "./export/xlsx.js";
@@ -112,13 +111,6 @@ function badRequest(reason: string): Response {
   });
 }
 
-function jsonResponse(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data, null, 2), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
-}
-
 async function handleExport(url: URL, env: Env): Promise<Response> {
   const target = url.searchParams.get("url");
   if (!target) return badRequest("missing ?url= parameter");
@@ -187,32 +179,6 @@ async function handlePdf(url: URL, env: Env): Promise<Response> {
   });
 }
 
-/** TEMP: dump the raw fetch result as JSON. Remove once xlsx + pdf work. */
-async function handleDebug(url: URL, env: Env): Promise<Response> {
-  const target = url.searchParams.get("url");
-  if (!target) return badRequest("missing ?url= parameter");
-
-  const ref = parseGitHubUrl(target);
-  if (!ref) return badRequest("unrecognized GitHub URL shape");
-
-  const client = makeClient(env.GITHUB_TOKEN);
-
-  try {
-    const result =
-      ref.kind === "project"
-        ? await fetchProject(client, ref.ownerType, ref.owner, ref.number)
-        : await fetchIssue(client, ref.owner, ref.repo, ref.number);
-
-    if (!result) return jsonResponse({ error: "not found" }, 404);
-    return jsonResponse(result);
-  } catch (err) {
-    return jsonResponse(
-      { error: err instanceof Error ? err.message : String(err) },
-      500,
-    );
-  }
-}
-
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
@@ -224,8 +190,6 @@ export default {
         return handleExport(url, env);
       case "/pdf":
         return handlePdf(url, env);
-      case "/_debug":
-        return handleDebug(url, env);
       default:
         return new Response("Not found\n", {
           status: 404,
