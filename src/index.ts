@@ -8,11 +8,11 @@
  */
 
 import { BUILD_INFO } from "./build-info.js";
-import { buildWorkbook, workbookFilename } from "./export/xlsx.js";
 import { makeClient } from "./github/client.js";
 import { fetchIssue, fetchProject } from "./github/queries.js";
 import type { IssueSnapshot, ProjectSnapshot } from "./github/types.js";
-import { pdfFilename, renderPdf } from "./render/pdf.js";
+import { buildPdf, pdfFilename } from "./output/pdf.js";
+import { buildWorkbook, workbookFilename } from "./output/xlsx.js";
 
 type ProjectRef = {
   kind: "project";
@@ -65,9 +65,9 @@ function parseGitHubUrl(input: string): GitHubRef | null {
 }
 
 function landingPage(env: Env): Response {
-  const { commit, branch } = BUILD_INFO;
   const versionId = env.CF_VERSION_METADATA.id;
-  const versionTimestamp = env.CF_VERSION_METADATA.timestamp;
+  const versionTag = env.CF_VERSION_METADATA.tag || "(no tag)";
+  const { commit, branch } = BUILD_INFO;
 
   const html = `<!doctype html>
 <html lang="en">
@@ -111,7 +111,7 @@ function landingPage(env: Env): Response {
 		<dl>
 			<dt>Commit</dt><dd>${escapeHtml(commit)} (${escapeHtml(branch)})</dd>
 			<dt>Version</dt><dd>${escapeHtml(versionId)}</dd>
-			<dt>Timestamp</dt><dd>${escapeHtml(versionTimestamp)}</dd>
+			<dt>Tag</dt><dd>${escapeHtml(versionTag)}</dd>
 		</dl>
 	</footer>
 </body>
@@ -229,7 +229,7 @@ async function handlePdf(url: URL, env: Env): Promise<Response> {
     });
   }
 
-  const bytes = await renderPdf(snapshot, env.BROWSER);
+  const bytes = await buildPdf(snapshot, env.BROWSER);
   const filename = pdfFilename(snapshot);
 
   return new Response(bytes, {

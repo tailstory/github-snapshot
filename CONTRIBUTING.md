@@ -20,11 +20,10 @@ src/
 │   ├── client.ts         — Octokit factory
 │   ├── queries.ts        — GraphQL queries and pagination
 │   └── types.ts          — typed shapes for projects and issues
-├── export/
-│   └── xlsx.ts           — workbook builder (SheetJS)
-└── render/
-    ├── template.ts       — HTML template for issue PDFs
-    └── pdf.ts            — Browser Rendering integration
+└── output/
+    ├── xlsx.ts           — workbook builder (SheetJS)
+    ├── pdf.ts            — Browser Rendering integration
+    └── pdf-template.ts   — HTML template for issue PDFs
 scripts/
 └── write-build-info.mjs  — generates src/build-info.ts at build time
 ```

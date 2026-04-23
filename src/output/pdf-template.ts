@@ -2,7 +2,7 @@ import { marked } from "marked";
 
 import type { IssueSnapshot } from "../github/types.js";
 
-export interface RenderedIssue {
+export interface IssueHtml {
   /** Full <html> document for the PDF body. */
   mainHtml: string;
   /** Small HTML fragment shown as the repeating page header. */
@@ -187,12 +187,12 @@ const HEADER_STYLES = `
 `;
 
 /**
- * Render an IssueSnapshot to the HTML pieces needed for PDF generation.
+ * Build the HTML pieces needed to generate a PDF for the given issue.
  *
  * Returns both the main document body and a small fragment to use as the
- * repeating page header. The PDF renderer wires these together.
+ * repeating page header. The PDF builder wires these together.
  */
-export function renderIssue(snapshot: IssueSnapshot): RenderedIssue {
+export function buildIssueHtml(snapshot: IssueSnapshot): IssueHtml {
   const title = escapeHtml(snapshot.title);
   const repoSlug = escapeHtml(`${snapshot.owner}/${snapshot.repo}`);
   const issueNum = `#${snapshot.number}`;

@@ -1,7 +1,7 @@
 import puppeteer from "@cloudflare/puppeteer";
 
-import type { IssueSnapshot } from "../github/types.js";
-import { renderIssue } from "./template.js";
+import type { IssueSnapshot } from "../github/types.ts";
+import { buildIssueHtml } from "./pdf-template.ts";
 
 /**
  * Render an issue snapshot to PDF bytes using the Browser Rendering binding.
@@ -12,11 +12,11 @@ import { renderIssue } from "./template.js";
  * For low-traffic personal use this is fine; if usage grew we'd want to
  * keep the browser alive in a Durable Object and reuse it across requests.
  */
-export async function renderPdf(
+export async function buildPdf(
   snapshot: IssueSnapshot,
   browserBinding: Fetcher,
 ): Promise<Uint8Array> {
-  const { mainHtml, headerHtml } = renderIssue(snapshot);
+  const { mainHtml, headerHtml } = buildIssueHtml(snapshot);
 
   const browser = await puppeteer.launch(browserBinding);
   try {
