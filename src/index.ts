@@ -72,13 +72,16 @@ function landingPage(env: Env): Response {
   const versionId = env.CF_VERSION_METADATA.id;
   const versionTimestamp = env.CF_VERSION_METADATA.timestamp;
 
-  const html = Mustache.render(landingTemplate, {
-    styles: landingStyles,
-    commit,
-    branch,
-    versionId,
-    versionTimestamp,
-  });
+  const html = Mustache.render(
+    landingTemplate,
+    {
+      commit,
+      branch,
+      versionId,
+      versionTimestamp,
+    },
+    { styles: landingStyles },
+  );
 
   return new Response(html, {
     headers: { "content-type": "text/html; charset=utf-8" },
