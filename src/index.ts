@@ -63,7 +63,10 @@ function parseGitHubUrl(input: string): GitHubRef | null {
   return null;
 }
 
-function landingPage(): Response {
+function landingPage(env: Env): Response {
+  const versionId = env.CF_VERSION_METADATA.id;
+  const versionTag = env.CF_VERSION_METADATA.tag || "(no tag)";
+
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -78,6 +81,10 @@ function landingPage(): Response {
 		label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
 		input[type=url] { width: 100%; padding: 0.5rem; font-size: 1rem; box-sizing: border-box; }
 		button { margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+		footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid #eee; color: #888; font-size: 0.85rem; font-family: ui-monospace, monospace; }
+		footer dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0; }
+		footer dt { font-weight: 600; }
+		footer dd { margin: 0; word-break: break-all; }
 	</style>
 </head>
 <body>
@@ -97,6 +104,13 @@ function landingPage(): Response {
 			placeholder="https://github.com/acme/widgets/issues/42">
 		<button type="submit">Render</button>
 	</form>
+
+	<footer>
+		<dl>
+			<dt>Version</dt><dd>${escapeHtml(versionId)}</dd>
+			<dt>Tag</dt><dd>${escapeHtml(versionTag)}</dd>
+		</dl>
+	</footer>
 </body>
 </html>`;
 
@@ -110,6 +124,15 @@ function badRequest(reason: string): Response {
     status: 400,
     headers: { "content-type": "text/plain; charset=utf-8" },
   });
+}
+
+/** Minimal HTML escape for safe substitution into the landing page footer. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /**
@@ -220,7 +243,7 @@ export default {
 
     switch (url.pathname) {
       case "/":
-        return landingPage();
+        return landingPage(env);
       case "/export":
         return handleExport(url, env);
       case "/pdf":
