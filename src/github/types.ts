@@ -68,6 +68,9 @@ export interface IssueSnapshot {
 
   bodyMarkdown: string;
   comments: IssueComment[];
+
+  /** Issue-level custom fields (the IssueFields beta), flattened to primitives. */
+  fields: Record<string, FieldValue>;
 }
 
 export interface IssueComment {

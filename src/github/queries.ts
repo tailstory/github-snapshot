@@ -348,6 +348,35 @@ const ISSUE_QUERY = /* GraphQL */ `
 				parent {
 					url
 				}
+				fieldValues(first: 50) {
+					nodes {
+						__typename
+						... on IssueFieldText {
+							text
+							field {
+								name
+							}
+						}
+						... on IssueFieldNumber {
+							number
+							field {
+								name
+							}
+						}
+						... on IssueFieldDate {
+							date
+							field {
+								name
+							}
+						}
+						... on IssueFieldSingleSelect {
+							optionName: name
+							field {
+								name
+							}
+						}
+					}
+				}
 				comments(first: 100, after: $commentsCursor) {
 					pageInfo {
 						hasNextPage
@@ -366,6 +395,15 @@ const ISSUE_QUERY = /* GraphQL */ `
 	}
 `;
 
+interface RawIssueFieldValue {
+  __typename: string;
+  text?: string;
+  number?: number;
+  date?: string;
+  optionName?: string;
+  field?: { name?: string };
+}
+
 interface RawIssueResponse {
   repository: {
     issue: {
@@ -383,6 +421,7 @@ interface RawIssueResponse {
       milestone: { title: string } | null;
       issueType: { name: string } | null;
       parent: { url: string } | null;
+      fieldValues: { nodes: RawIssueFieldValue[] };
       comments: {
         pageInfo: { hasNextPage: boolean; endCursor: string | null };
         nodes: Array<{
@@ -393,6 +432,27 @@ interface RawIssueResponse {
       };
     } | null;
   } | null;
+}
+
+/** Pull a primitive value out of a raw issue field value entry. */
+function extractIssueFieldValue(
+  raw: RawIssueFieldValue,
+): [name: string, value: FieldValue] | null {
+  const name = raw.field?.name;
+  if (!name) return null;
+
+  switch (raw.__typename) {
+    case "IssueFieldText":
+      return [name, raw.text ?? null];
+    case "IssueFieldNumber":
+      return [name, raw.number ?? null];
+    case "IssueFieldDate":
+      return [name, raw.date ?? null];
+    case "IssueFieldSingleSelect":
+      return [name, raw.optionName ?? null];
+    default:
+      return null;
+  }
 }
 
 type RawIssue = NonNullable<
@@ -437,6 +497,12 @@ export async function fetchIssue(
 
   if (!issueMeta) return null;
 
+  const fields: Record<string, FieldValue> = {};
+  for (const raw of issueMeta.fieldValues.nodes) {
+    const entry = extractIssueFieldValue(raw);
+    if (entry) fields[entry[0]] = entry[1];
+  }
+
   return {
     owner,
     repo,
@@ -454,6 +520,7 @@ export async function fetchIssue(
     issueType: issueMeta.issueType?.name ?? null,
     parentIssue: issueMeta.parent?.url ?? null,
     bodyMarkdown: issueMeta.body,
+    fields,
     comments,
   };
 }

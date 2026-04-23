@@ -66,6 +66,12 @@ function metadataTable(snapshot: IssueSnapshot): string {
   if (snapshot.milestone) rows.push(["Milestone", snapshot.milestone]);
   if (snapshot.issueType) rows.push(["Type", snapshot.issueType]);
   if (snapshot.parentIssue) rows.push(["Parent", snapshot.parentIssue]);
+
+  // Issue-level custom fields appear after the built-ins, before the URL.
+  for (const [name, value] of Object.entries(snapshot.fields)) {
+    if (value !== null && value !== "") rows.push([name, String(value)]);
+  }
+
   rows.push(["URL", snapshot.url]);
 
   const cells = rows
