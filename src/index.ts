@@ -129,37 +129,6 @@ function badRequest(reason: string): Response {
   });
 }
 
-/** TEMP: introspect the IssueFieldValue union to figure out its actual shape. */
-async function handleSchema(env: Env): Promise<Response> {
-  const client = makeClient(env.GITHUB_TOKEN);
-  const data = await client(
-    `query {
-			__type(name: "IssueFieldValue") {
-				name
-				kind
-				possibleTypes {
-					name
-					fields {
-						name
-						type {
-							name
-							kind
-							ofType {
-								name
-								kind
-							}
-						}
-					}
-				}
-			}
-		}`,
-    {},
-  );
-  return new Response(JSON.stringify(data, null, 2), {
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
-}
-
 /** Minimal HTML escape for safe substitution into the landing page footer. */
 function escapeHtml(s: string): string {
   return s
@@ -282,8 +251,6 @@ export default {
         return handleExport(url, env);
       case "/pdf":
         return handlePdf(url, env);
-      case "/_schema":
-        return handleSchema(env);
       default:
         return new Response("Not found\n", {
           status: 404,
