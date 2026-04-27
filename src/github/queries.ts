@@ -83,6 +83,35 @@ const PROJECT_QUERY = /* GraphQL */ `
 						parent {
 							url
 						}
+						issueFieldValues(first: 50) {
+							nodes {
+								__typename
+								... on IssueFieldTextValue {
+									value
+									field {
+										... on IssueFieldText { name }
+									}
+								}
+								... on IssueFieldNumberValue {
+									value
+									field {
+										... on IssueFieldNumber { name }
+									}
+								}
+								... on IssueFieldDateValue {
+									value
+									field {
+										... on IssueFieldDate { name }
+									}
+								}
+								... on IssueFieldSingleSelectValue {
+									value
+									field {
+										... on IssueFieldSingleSelect { name }
+									}
+								}
+							}
+						}
 					}
 				}
 				fieldValues(first: 50) {
@@ -168,6 +197,7 @@ interface RawProjectItem {
     milestone?: { title: string } | null;
     issueType?: { name: string } | null;
     parent?: { url: string } | null;
+    issueFieldValues?: { nodes: RawIssueFieldValue[] };
   } | null;
   fieldValues: { nodes: RawFieldValue[] };
 }
@@ -221,6 +251,11 @@ function toProjectItem(raw: RawProjectItem): ProjectItem | null {
   if (raw.type !== "ISSUE" || !raw.content) return null;
 
   const fields: Record<string, FieldValue> = {};
+  // Issue fields first; project fields take precedence on name collisions.
+  for (const rawValue of raw.content.issueFieldValues?.nodes ?? []) {
+    const entry = extractIssueFieldValue(rawValue);
+    if (entry) fields[entry[0]] = entry[1];
+  }
   for (const rawValue of raw.fieldValues.nodes) {
     const entry = extractFieldValue(rawValue);
     if (entry) fields[entry[0]] = entry[1];
@@ -289,6 +324,9 @@ export async function fetchProject(
     }
 
     for (const rawItem of project.items.nodes) {
+      for (const node of rawItem.content?.issueFieldValues?.nodes ?? []) {
+        if (node.field?.name) fieldNames.add(node.field.name);
+      }
       const item = toProjectItem(rawItem);
       if (item) items.push(item);
     }
