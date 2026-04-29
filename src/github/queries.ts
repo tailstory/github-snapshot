@@ -84,6 +84,16 @@ const PROJECT_QUERY = /* GraphQL */ `
 						parent {
 							url
 						}
+						blockedByIssues(first: 50) {
+							nodes {
+								url
+							}
+						}
+						blockingIssues(first: 50) {
+							nodes {
+								url
+							}
+						}
 						issueFieldValues(first: 50) {
 							nodes {
 								__typename
@@ -198,6 +208,8 @@ interface RawProjectItem {
     milestone?: { title: string } | null;
     issueType?: { name: string } | null;
     parent?: { url: string } | null;
+    blockedByIssues?: { nodes: Array<{ url: string }> };
+    blockingIssues?: { nodes: Array<{ url: string }> };
     issueFieldValues?: { nodes: RawIssueFieldValue[] };
   } | null;
   fieldValues: { nodes: RawFieldValue[] };
@@ -290,6 +302,8 @@ function toProjectItem(raw: RawProjectItem): ProjectItem | null {
     milestone: raw.content.milestone?.title ?? null,
     issueType: raw.content.issueType?.name ?? null,
     parentIssue: raw.content.parent?.url ?? null,
+    blockedBy: raw.content.blockedByIssues?.nodes.map((n) => n.url) ?? [],
+    blocking: raw.content.blockingIssues?.nodes.map((n) => n.url) ?? [],
     createdAt: raw.content.createdAt ?? "",
     updatedAt: raw.content.updatedAt ?? "",
     closedAt: raw.content.closedAt ?? null,
@@ -336,7 +350,11 @@ export async function fetchProject(
     };
 
     for (const node of project.fields.nodes) {
-      if (node.name && node.dataType && SUPPORTED_FIELD_TYPES.has(node.dataType)) {
+      if (
+        node.name &&
+        node.dataType &&
+        SUPPORTED_FIELD_TYPES.has(node.dataType)
+      ) {
         fieldNames.add(node.name);
       }
     }
@@ -404,6 +422,28 @@ const ISSUE_QUERY = /* GraphQL */ `
 				parent {
 					url
 				}
+				blockedByIssues(first: 50) {
+					nodes {
+						url
+						number
+						title
+						state
+						repository {
+							nameWithOwner
+						}
+					}
+				}
+				blockingIssues(first: 50) {
+					nodes {
+						url
+						number
+						title
+						state
+						repository {
+							nameWithOwner
+						}
+					}
+				}
 				issueFieldValues(first: 50) {
 					nodes {
 						__typename
@@ -457,6 +497,14 @@ interface RawIssueFieldValue {
   field?: { name?: string };
 }
 
+interface RawDependencyRef {
+  url: string;
+  number: number;
+  title: string;
+  state: string;
+  repository: { nameWithOwner: string };
+}
+
 interface RawIssueResponse {
   repository: {
     issue: {
@@ -474,6 +522,8 @@ interface RawIssueResponse {
       milestone: { title: string } | null;
       issueType: { name: string } | null;
       parent: { url: string } | null;
+      blockedByIssues: { nodes: RawDependencyRef[] };
+      blockingIssues: { nodes: RawDependencyRef[] };
       issueFieldValues: { nodes: RawIssueFieldValue[] };
       comments: {
         pageInfo: { hasNextPage: boolean; endCursor: string | null };
@@ -485,6 +535,17 @@ interface RawIssueResponse {
       };
     } | null;
   } | null;
+}
+
+/** Map a raw dependency reference to a domain IssueDependency. */
+function toDependencyRef(raw: RawDependencyRef) {
+  return {
+    url: raw.url,
+    number: raw.number,
+    title: raw.title,
+    state: raw.state,
+    repository: raw.repository.nameWithOwner,
+  };
 }
 
 /** Pull a primitive value out of a raw issue field value entry. */
@@ -560,6 +621,8 @@ export async function fetchIssue(
     milestone: issueMeta.milestone?.title ?? null,
     issueType: issueMeta.issueType?.name ?? null,
     parentIssue: issueMeta.parent?.url ?? null,
+    blockedBy: issueMeta.blockedByIssues.nodes.map(toDependencyRef),
+    blocking: issueMeta.blockingIssues.nodes.map(toDependencyRef),
     bodyMarkdown: issueMeta.body,
     fields,
     comments,
