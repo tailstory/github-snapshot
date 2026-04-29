@@ -23,6 +23,8 @@ const BASE_COLUMNS = [
   "Closed At",
 ] as const;
 
+const BASE_COLUMN_SET: ReadonlySet<string> = new Set(BASE_COLUMNS);
+
 type Row = Record<string, string | number | null>;
 
 /** Render a list of strings as a single comma-separated cell. */
@@ -66,10 +68,11 @@ function itemToRow(item: ProjectItem, fieldNames: string[]): Row {
  * one column per project custom field. Empty values render as blank cells.
  */
 export function buildWorkbook(snapshot: ProjectSnapshot): Uint8Array {
-  const headers = [...BASE_COLUMNS, ...snapshot.fieldNames];
-  const rows = snapshot.items.map((item) =>
-    itemToRow(item, snapshot.fieldNames),
+  const extraFields = snapshot.fieldNames.filter(
+    (name) => !BASE_COLUMN_SET.has(name),
   );
+  const headers = [...BASE_COLUMNS, ...extraFields];
+  const rows = snapshot.items.map((item) => itemToRow(item, extraFields));
 
   const sheet = XLSX.utils.json_to_sheet(rows, { header: headers });
   const workbook = XLSX.utils.book_new();

@@ -40,6 +40,7 @@ const PROJECT_QUERY = /* GraphQL */ `
 			nodes {
 				... on ProjectV2FieldCommon {
 					name
+					dataType
 				}
 			}
 		}
@@ -212,12 +213,27 @@ interface RawProject {
   title: string;
   number: number;
   url: string;
-  fields: { nodes: Array<{ name?: string }> };
+  fields: { nodes: Array<{ name?: string; dataType?: string }> };
   items: {
     pageInfo: { hasNextPage: boolean; endCursor: string | null };
     nodes: RawProjectItem[];
   };
 }
+
+/**
+ * Project field dataTypes whose values we know how to flatten to a primitive.
+ * Other dataTypes (ASSIGNEES, LABELS, MILESTONE, REPOSITORY, LINKED_PULL_REQUESTS,
+ * REVIEWERS, PARENT_ISSUE, SUB_ISSUES_PROGRESS, TITLE, …) are GitHub's built-in
+ * system fields that mirror underlying issue properties — we either surface them
+ * via dedicated columns or skip them entirely.
+ */
+const SUPPORTED_FIELD_TYPES = new Set([
+  "TEXT",
+  "NUMBER",
+  "DATE",
+  "SINGLE_SELECT",
+  "ITERATION",
+]);
 
 /** Pull a primitive value out of a raw field value entry. */
 function extractFieldValue(
@@ -320,7 +336,9 @@ export async function fetchProject(
     };
 
     for (const node of project.fields.nodes) {
-      if (node.name) fieldNames.add(node.name);
+      if (node.name && node.dataType && SUPPORTED_FIELD_TYPES.has(node.dataType)) {
+        fieldNames.add(node.name);
+      }
     }
 
     for (const rawItem of project.items.nodes) {
