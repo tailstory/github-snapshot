@@ -16,7 +16,7 @@ export function makeClient(token: string): GraphQL {
       authorization: `bearer ${token}`,
       "user-agent": "github-snapshot",
       // Opt into preview schemas. Comma-separated if more get added later.
-      "graphql-features": "issue_fields",
+      "graphql-features": "issue_fields,issue_dependencies",
     },
   });
 }
