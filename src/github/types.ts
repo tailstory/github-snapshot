@@ -27,6 +27,10 @@ export interface ProjectItem {
   milestone: string | null;
   issueType: string | null; // beta: bug, feature, task, etc.
   parentIssue: string | null; // beta: parent issue URL if any
+  /** URLs of issues that block this one. */
+  blockedBy: string[];
+  /** URLs of issues that this one blocks. */
+  blocking: string[];
 
   createdAt: string; // ISO 8601
   updatedAt: string;
@@ -65,6 +69,10 @@ export interface IssueSnapshot {
   milestone: string | null;
   issueType: string | null;
   parentIssue: string | null;
+  /** Issues that block this one. */
+  blockedBy: IssueDependency[];
+  /** Issues that this one blocks. */
+  blocking: IssueDependency[];
 
   bodyMarkdown: string;
   comments: IssueComment[];
@@ -77,4 +85,13 @@ export interface IssueComment {
   author: string | null;
   createdAt: string;
   bodyMarkdown: string;
+}
+
+/** A reference to another issue this issue depends on (or that depends on it). */
+export interface IssueDependency {
+  url: string;
+  number: number;
+  title: string;
+  state: string; // OPEN, CLOSED
+  repository: string; // "owner/repo"
 }

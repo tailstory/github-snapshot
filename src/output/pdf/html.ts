@@ -1,7 +1,7 @@
 import { marked } from "marked";
 import Mustache from "mustache";
 
-import type { IssueSnapshot } from "../../github/types.js";
+import type { IssueDependency, IssueSnapshot } from "../../github/types.js";
 import pdfTemplate from "./document.html";
 import pdfFooter from "./page-footer.html";
 import pdfHeader from "./page-header.html";
@@ -14,6 +14,10 @@ export interface IssueHtml {
   mainHtml: string;
   /** Small HTML fragment shown as the repeating page footer. */
   footerHtml: string;
+}
+
+function formatDependency(dep: IssueDependency): string {
+  return `${dep.repository}#${dep.number}`;
 }
 
 /** Format an ISO timestamp as "2026-04-22 14:30 UTC" for display. */
@@ -49,6 +53,13 @@ function metadataRows(
   if (snapshot.milestone) rows.push(["Milestone", snapshot.milestone]);
   if (snapshot.issueType) rows.push(["Type", snapshot.issueType]);
   if (snapshot.parentIssue) rows.push(["Parent", snapshot.parentIssue]);
+  if (snapshot.blockedBy.length > 0)
+    rows.push([
+      "Blocked by",
+      snapshot.blockedBy.map(formatDependency).join(", "),
+    ]);
+  if (snapshot.blocking.length > 0)
+    rows.push(["Blocking", snapshot.blocking.map(formatDependency).join(", ")]);
 
   for (const [name, value] of Object.entries(snapshot.fields)) {
     if (value !== null && value !== "") rows.push([name, String(value)]);
