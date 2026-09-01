@@ -14,18 +14,18 @@
     "types": "wrangler types"
   },
   "dependencies": {
-    "@cloudflare/puppeteer": "^1.1.0",
-    "@octokit/graphql": "^9.0.3",
-    "marked": "^18.0.7",
+    "@cloudflare/puppeteer": "^1.4.0",
+    "@octokit/graphql": "^9.0.4",
+    "marked": "^18.0.11",
     "mustache": "^4.2.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.5",
+    "@biomejs/biome": "2.5.10",
     "@types/mustache": "^4.2.6",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.3.0",
     "typescript": "^7.0.2",
-    "wrangler": "^4.114.0"
+    "wrangler": "^4.125.0"
   },
   "engines": {
     "node": ">=24.12.0"
